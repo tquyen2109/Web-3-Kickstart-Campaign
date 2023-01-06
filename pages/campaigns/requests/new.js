@@ -4,6 +4,7 @@ import Campaign from "../../../ethereum/campaign";
 import web3 from "../../../ethereum/web3";
 import {Link, Router} from "../../../routes"
 import Layout from "../../../components/Layout";
+import factory from "../../../ethereum/factory";
 
 class RequestNew extends Component {
     state = {
@@ -17,14 +18,31 @@ class RequestNew extends Component {
         return {address};
     }
 
+    onSubmit = async (event) => {
+        event.preventDefault();
+        const campaign = Campaign(this.props.address);
+        const {description, value, recipient} = this.state;
+        try {
+            const accounts = await web3.eth.getAccounts();
+            await campaign.methods.createRequest(description, web3.utils.toWei(value, "ether"), recipient)
+                .send({
+                    from: accounts[0]
+                });
+            Router.pushRoute(`/campaigns/${this.props.address}/requests`);
+        } catch (err) {
+
+        }
+    };
+
     render() {
         return (
             <Layout>
                 <h3>Create a Request</h3>
-                <Form>
+                <Form onSubmit={this.onSubmit}>
                     <Form.Field>
                         <label htmlFor="">Description</label>
-                        <Input value={this.state.description} onChange={event => this.setState({description: event.target.value})}/>
+                        <Input value={this.state.description}
+                               onChange={event => this.setState({description: event.target.value})}/>
                     </Form.Field>
                     <Form.Field>
                         <label htmlFor="">Value in Ether</label>
@@ -32,7 +50,8 @@ class RequestNew extends Component {
                     </Form.Field>
                     <Form.Field>
                         <label htmlFor="">Recipient</label>
-                        <Input value={this.state.recipient} onChange={event => this.setState({recipient: event.target.value})}/>
+                        <Input value={this.state.recipient}
+                               onChange={event => this.setState({recipient: event.target.value})}/>
                     </Form.Field>
                     <Button primary>Create!</Button>
                 </Form>
