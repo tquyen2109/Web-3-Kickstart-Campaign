@@ -4,13 +4,14 @@ import Campaign from "../../../ethereum/campaign";
 import web3 from "../../../ethereum/web3";
 import {Link, Router} from "../../../routes"
 import Layout from "../../../components/Layout";
-import factory from "../../../ethereum/factory";
 
 class RequestNew extends Component {
     state = {
         value: '',
         description: '',
-        recipient: ''
+        recipient: '',
+        errorMessage: '',
+        loading: false
     }
 
     static async getInitialProps(props) {
@@ -22,6 +23,7 @@ class RequestNew extends Component {
         event.preventDefault();
         const campaign = Campaign(this.props.address);
         const {description, value, recipient} = this.state;
+        this.setState({loading: true, errorMessage: ''});
         try {
             const accounts = await web3.eth.getAccounts();
             await campaign.methods.createRequest(description, web3.utils.toWei(value, "ether"), recipient)
@@ -30,15 +32,21 @@ class RequestNew extends Component {
                 });
             Router.pushRoute(`/campaigns/${this.props.address}/requests`);
         } catch (err) {
-
+            this.setState({errorMessage: err.message});
         }
+        this.setState({loading: false});
     };
 
     render() {
         return (
             <Layout>
+                <Link route={`/campaigns/${this.props.address}/requests`}>
+                    <a href="">
+                        Back
+                    </a>
+                </Link>
                 <h3>Create a Request</h3>
-                <Form onSubmit={this.onSubmit}>
+                <Form onSubmit={this.onSubmit} error={!!this.state.errorMessage}>
                     <Form.Field>
                         <label htmlFor="">Description</label>
                         <Input value={this.state.description}
@@ -53,7 +61,8 @@ class RequestNew extends Component {
                         <Input value={this.state.recipient}
                                onChange={event => this.setState({recipient: event.target.value})}/>
                     </Form.Field>
-                    <Button primary>Create!</Button>
+                    <Message error header={"Oops!"} content={this.state.errorMessage}></Message>
+                    <Button primary loading={this.state.loading}>Create!</Button>
                 </Form>
             </Layout>
         )
